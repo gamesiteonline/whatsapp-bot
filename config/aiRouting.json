@@ -1,0 +1,21 @@
+{
+  "deepseek": {
+    "enabled": true,
+    "features": ["faq", "orders", "appointments", "leads", "games", "groupModeration", "inventory", "coupons", "subscriptions", "storyteller", "virtualPet", "intentEngine", "sentimentAnalyzer"]
+  },
+  "gemini": {
+    "enabled": true,
+    "features": ["translation"]
+  },
+  "openai": {
+    "enabled": true,
+    "features": ["voiceTranscription", "imageGeneration"]
+  },
+  "openrouter": {
+    "enabled": true,
+    "features": ["conversation", "imageUnderstanding", "aiSearch", "memeAnalysis"]
+  },
+  "noAi": {
+    "features": ["alerts", "menus", "supportRouting", "multimedia", "otpVerification", "crmSync", "contentDelivery", "locations", "feedback", "cartReminders", "invoices", "analytics", "musicDiscovery", "socialPoster", "calendarSync", "weatherAlerts", "cryptoStocks", "emailGateway", "jiraIntegration", "webhookForwarder", "antiPhishing", "autoDelete", "parentalControls", "rateLimiter", "encryptedNotes"]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "features": {
+    "faq": true, "orders": true, "appointments": true, "leads": true,
+    "payments": true, "alerts": true, "menus": true, "supportRouting": true,
+    "feedback": true, "multimedia": true, "cartReminders": true,
+    "translation": true, "otpVerification": true, "crmSync": true,
+    "contentDelivery": true, "aiSearch": true, "locations": true,
+    "games": true, "groupModeration": true, "tickets": true,
+    "invoices": true, "inventory": true, "coupons": true,
+    "subscriptions": true, "analytics": true, "memeGenerator": true,
+    "musicDiscovery": true, "storyteller": true, "virtualPet": true,
+    "socialPoster": true, "calendarSync": true, "weatherAlerts": true,
+    "cryptoStocks": true, "emailGateway": true, "jiraIntegration": true,
+    "webhookForwarder": true, "antiPhishing": true, "autoDelete": true,
+    "parentalControls": true, "rateLimiter": true, "encryptedNotes": true,
+    "voiceTranscription": true, "imageUnderstanding": true, "imageGeneration": true
+  }
+}

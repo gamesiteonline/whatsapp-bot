@@ -1,0 +1,17 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot with AI features",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@whiskeysockets/baileys": "^6.7.16",
+    "axios": "^1.7.9",
+    "better-sqlite3": "^11.7.0",
+    "openai": "^4.77.0",
+    "pino": "^9.6.0"
+  }
+}
