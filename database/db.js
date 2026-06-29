@@ -39,7 +39,7 @@ class Statement {
 class Database {
   constructor(sqlDb) {
     this.sqlDb = sqlDb;
-    this.needsSave = false;
+    sqlDb.run('CREATE TABLE IF NOT EXISTS kv_store (key TEXT PRIMARY KEY, value TEXT)');
   }
   prepare(sql) {
     return new Statement(this.sqlDb, sql);
@@ -54,6 +54,48 @@ class Database {
     const data = this.sqlDb.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(dbPath, buffer);
+  }
+  get(keyOrSql, params) {
+    if (typeof keyOrSql === 'string' && /\s/.test(keyOrSql)) {
+      const stmt = this.sqlDb.prepare(keyOrSql);
+      if (params && params.length) stmt.bind(params);
+      if (stmt.step()) {
+        const result = stmt.getAsObject();
+        stmt.free();
+        return result;
+      }
+      stmt.free();
+      return undefined;
+    }
+    const stmt = this.sqlDb.prepare('SELECT value FROM kv_store WHERE key = ?');
+    stmt.bind([keyOrSql]);
+    if (stmt.step()) {
+      const val = stmt.getAsObject();
+      stmt.free();
+      try { return JSON.parse(val.value); } catch { return val.value; }
+    }
+    stmt.free();
+    return undefined;
+  }
+  set(key, value) {
+    const json = typeof value === 'string' ? value : JSON.stringify(value);
+    this.sqlDb.run('INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)', [key, json]);
+  }
+  delete(key) {
+    this.sqlDb.run('DELETE FROM kv_store WHERE key = ?', [key]);
+  }
+  run(sql, params) {
+    this.sqlDb.run(sql, params || []);
+  }
+  all(sql, params) {
+    const stmt = this.sqlDb.prepare(sql);
+    if (params && params.length) stmt.bind(params);
+    const results = [];
+    while (stmt.step()) {
+      results.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return results;
   }
 }
 
