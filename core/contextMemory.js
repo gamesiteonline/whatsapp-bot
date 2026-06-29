@@ -1,10 +1,10 @@
-const db = require('../database/db');
+const { getDb } = require('../database/db');
 
 const MAX_MESSAGES = 20;
 
 class ContextMemory {
   get(userJid) {
-    const row = db.prepare('SELECT messages FROM conversations WHERE user_jid = ?').get(userJid);
+    const row = getDb().prepare('SELECT messages FROM conversations WHERE user_jid = ?').get(userJid);
     if (!row) return [];
     try {
       return JSON.parse(row.messages) || [];
@@ -22,7 +22,7 @@ class ContextMemory {
     }
 
     const messagesJson = JSON.stringify(existing);
-    db.prepare(`
+    getDb().prepare(`
       INSERT INTO conversations (user_jid, messages, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(user_jid) DO UPDATE SET
@@ -32,7 +32,7 @@ class ContextMemory {
   }
 
   clear(userJid) {
-    db.prepare('DELETE FROM conversations WHERE user_jid = ?').run(userJid);
+    getDb().prepare('DELETE FROM conversations WHERE user_jid = ?').run(userJid);
   }
 
   getContextForAI(userJid) {

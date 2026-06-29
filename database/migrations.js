@@ -1,6 +1,6 @@
-const db = require('./db');
-
 function runMigrations() {
+  const { getDb } = require('./db');
+  const db = getDb();
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -15,9 +15,10 @@ const OWNER_NUMBER = config.ownerNumber;
 const BOT_NAME = config.botName;
 const PREFIX = config.prefix;
 
-const db = require('./database/db');
+const { initDatabase, getDb } = require('./database/db');
 const { runMigrations } = require('./database/migrations');
-runMigrations();
+
+let db;
 
 const AIRouter = require('./services/aiRouter');
 const aiRouter = new AIRouter(config);
@@ -88,6 +89,13 @@ function initFeatures() {
 }
 
 async function connectToWhatsApp() {
+  if (!db) {
+    botLog('Initializing database...');
+    db = await initDatabase();
+    runMigrations();
+    botLog('Database ready');
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
   const { version } = await fetchLatestBaileysVersion();
   botLog(`Baileys v${version.join('.')}`);

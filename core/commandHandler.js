@@ -78,7 +78,7 @@ class CommandHandler {
     }
   }
 
-  async feedback(args, { reply }) {
+  async feedback(args, { reply, sender }) {
     if (args.length < 1) {
       return reply(`Usage: ${this.prefix}feedback <rating (1-5)> [comment]`);
     }
@@ -87,8 +87,8 @@ class CommandHandler {
       return reply('Rating must be a number between 1 and 5.');
     }
     const comment = args.slice(1).join(' ') || '';
-    const db = require('../database/db');
-    db.prepare('INSERT INTO feedback (user_jid, rating, comment, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
+    const { getDb } = require('../database/db');
+    getDb().prepare('INSERT INTO feedback (user_jid, rating, comment, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)')
       .run(sender, rating, comment);
     return reply(`Thank you for your feedback! (Rating: ${rating}/5)`);
   }

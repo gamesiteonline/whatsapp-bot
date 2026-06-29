@@ -10,8 +10,10 @@
     "@google/generative-ai": "^0.21.0",
     "@whiskeysockets/baileys": "^6.7.16",
     "axios": "^1.7.9",
-    "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.0",
+    "node-cron": "^3.0.3",
     "openai": "^4.77.0",
-    "pino": "^9.6.0"
+    "pino": "^9.6.0",
+    "sql.js": "^1.11.0"
   }
 }

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const featuresConfig = require('./config/features.json');
 const path = require('path');
 
