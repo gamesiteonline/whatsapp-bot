@@ -6,6 +6,7 @@ const {
   makeCacheableSignalKeyStore
 } = require('@whiskeysockets/baileys');
 const http = require('http');
+const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
 const config = require('./config');
@@ -54,6 +55,9 @@ let sock = null;
 const botState = {
   status: 'initializing',
   pairingCode: null,
+  pairingRequested: false,
+  qrCode: null,
+  lastQrAt: null,
   phoneNumber: null,
   lastPairingAt: null,
   connectedAt: null,
@@ -114,27 +118,40 @@ async function connectToWhatsApp() {
   initFeatures();
 
   if (!state.creds.registered && OWNER_NUMBER) {
-    setTimeout(async () => {
-      try {
-        const num = OWNER_NUMBER.replace(/[^0-9]/g, '');
-        const code = await sock.requestPairingCode(num);
-        botState.pairingCode = code;
-        botState.phoneNumber = num;
-        botState.lastPairingAt = Date.now();
-        botState.status = 'paired';
-        botLog(`Pairing Code: ${code}`);
-        botLog(`Open WhatsApp > Linked Devices > Link a Device`);
-      } catch (e) {
-        botLog(`Pairing code error: ${e.message}`);
-      }
-    }, 3000);
+    botLog('Waiting for connection to request pairing code...');
   }
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update;
+  sock.ev.on('connection.update', async (update) => {
+    const { connection, lastDisconnect, qr } = update;
+
+    if (qr) {
+      botState.qrCode = qr;
+      botState.lastQrAt = Date.now();
+      botLog('QR code received');
+    }
+
     if (connection === 'connecting') {
       botState.status = 'connecting';
       botLog('Connecting...');
+      if (!state.creds.registered && OWNER_NUMBER && !botState.pairingRequested) {
+        botState.pairingRequested = true;
+        setTimeout(async () => {
+          try {
+            const num = OWNER_NUMBER.replace(/[^0-9]/g, '');
+            const code = await sock.requestPairingCode(num);
+            botState.pairingCode = code;
+            botState.phoneNumber = num;
+            botState.lastPairingAt = Date.now();
+            botState.status = 'paired';
+            botLog(`Pairing Code: ${code}`);
+            botLog('Open WhatsApp > Linked Devices > Link a Device');
+          } catch (e) {
+            botLog(`Pairing code error: ${e.message}`);
+            botLog('Try using the QR code on the dashboard instead');
+            botState.pairingRequested = false;
+          }
+        }, 2000);
+      }
     }
     if (connection === 'open') {
       botState.status = 'connected';
@@ -283,6 +300,7 @@ http.createServer((req, res) => {
       phoneNumber: botState.phoneNumber,
       lastPairingAt: botState.lastPairingAt,
       connectedAt: botState.connectedAt,
+      qrCode: botState.qrCode,
       uptime: Math.floor((Date.now() - botState.startTime) / 1000),
       botName: BOT_NAME,
       prefix: PREFIX,
@@ -323,6 +341,20 @@ http.createServer((req, res) => {
       }
     });
     return;
+  }
+
+  if (url === '/api/reset-auth') {
+    try {
+      const authDir = path.join(__dirname, 'auth_info_baileys');
+      if (fs.existsSync(authDir)) {
+        fs.rmSync(authDir, { recursive: true, force: true });
+      }
+      botLog('Auth reset. Restarting...');
+      setTimeout(() => process.exit(0), 1000);
+      return serveJson(res, { success: true, message: 'Auth reset. Restarting...' });
+    } catch (e) {
+      return serveJson(res, { success: false, error: e.message }, 500);
+    }
   }
 
   if (url === '/health') {
@@ -423,6 +455,18 @@ h1{font-size:22px;margin-bottom:4px;color:#fff}
   </div>
 </div>
 
+<div class="card" id="qrCard" style="display:none">
+  <div style="text-align:center;padding:12px">
+    <div class="pairing-label">QR Code (Alternative)</div>
+    <div id="qrContainer" style="background:#fff;display:inline-block;border-radius:8px;padding:8px"></div>
+    <div class="pairing-hint">Scan with WhatsApp > Linked Devices > Link a Device</div>
+  </div>
+</div>
+
+<div class="card" style="padding:16px">
+  <button class="btn-reconnect" onclick="resetAuth()" style="color:#ff4444;border-color:#ff4444">🗑️ Reset Auth & Restart</button>
+</div>
+
 <div class="stats">
   <div class="stat">
     <div class="stat-value" id="featureCount">${Object.keys(features).length}</div>
@@ -477,6 +521,11 @@ function requestPair() {
 function reconnect() {
   if(confirm('Reconnect bot?')) fetch('/api/pair', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:document.getElementById('phoneInput').value})});
 }
+function resetAuth() {
+  if(confirm('Reset all auth data and restart? You will need to pair again.')) {
+    fetch('/api/reset-auth').then(r=>r.json()).then(d=>alert(d.message));
+  }
+}
 async function poll() {
   try {
     const s = await fetch('/api/status').then(r=>r.json());
@@ -496,6 +545,17 @@ async function poll() {
     const l = await fetch('/api/logs').then(r=>r.json());
     const box = document.getElementById('logsBox');
     if(box) box.innerHTML = l.logs.map(x=>'<div>'+x+'</div>').join('');
+  } catch(e) {}
+  try {
+    const s = await fetch('/api/status').then(r=>r.json());
+    const qrCard = document.getElementById('qrCard');
+    const qrContainer = document.getElementById('qrContainer');
+    if(qrCard && s.status === 'connecting' && s.qrCode) {
+      qrCard.style.display = 'block';
+      if(qrContainer) qrContainer.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data='+encodeURIComponent(s.qrCode)+'" alt="QR Code" style="width:250px;height:250px">';
+    } else if(qrCard && (s.status === 'connected' || !s.qrCode)) {
+      qrCard.style.display = 'none';
+    }
   } catch(e) {}
 }
 setInterval(poll, 2000);
