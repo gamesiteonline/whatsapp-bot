@@ -132,25 +132,32 @@ async function connectToWhatsApp() {
 
     if (connection === 'connecting') {
       botState.status = 'connecting';
-      botLog('Connecting...');
+      botLog('Connecting to WhatsApp...');
       if (!state.creds.registered && OWNER_NUMBER && !botState.pairingRequested) {
         botState.pairingRequested = true;
+        // Increased timeout to ensure socket is fully ready
         setTimeout(async () => {
           try {
             const num = OWNER_NUMBER.replace(/[^0-9]/g, '');
+            if (num.length < 10) {
+              botLog('Error: OWNER_NUMBER in .env is too short or invalid.');
+              botState.pairingRequested = false;
+              return;
+            }
+            botLog(`Requesting pairing code for: ${num}`);
             const code = await sock.requestPairingCode(num);
             botState.pairingCode = code;
             botState.phoneNumber = num;
             botState.lastPairingAt = Date.now();
             botState.status = 'paired';
-            botLog(`Pairing Code: ${code}`);
-            botLog('Open WhatsApp > Linked Devices > Link a Device');
+            botLog(`SUCCESS! Pairing Code: ${code}`);
+            botLog('INSTRUCTIONS: Open WhatsApp > Linked Devices > Link a Device > Link with phone number instead');
           } catch (e) {
             botLog(`Pairing code error: ${e.message}`);
-            botLog('Try using the QR code on the dashboard instead');
+            botLog('Falling back to QR code. Check the dashboard.');
             botState.pairingRequested = false;
           }
-        }, 2000);
+        }, 5000); 
       }
     }
     if (connection === 'open') {
